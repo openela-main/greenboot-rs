@@ -7,7 +7,7 @@
 %bcond bundled_rust_deps %{defined rhel}
 
 Name:		greenboot-rs
-Version:	0.16.3
+Version:	0.16.4
 Release:	0%{?dist}
 Summary:	Generic Health Check Framework for systemd
 # Aggregated license of statically linked dependencies as per %%cargo_license_summary
@@ -34,7 +34,7 @@ automated rollback actions if it's not.
 
 %package -n %{pkgname}
 Summary:	%{summary}
-%{?systemd_requires}
+%{?systemd_ordering}
 Requires:	systemd >= 240
 Requires:	rpm-ostree
 Requires:	pam >= 1.4.0
@@ -101,14 +101,18 @@ install -DpZm 0755 usr/lib/greenboot/check/wanted.d/* %{buildroot}%{_prefix}/lib
 install -DpZm 0644 usr/lib/systemd/system/greenboot-healthcheck.service.d/10-network-online.conf %{buildroot}%{_unitdir}/greenboot-healthcheck.service.d/10-network-online.conf
 
 %post -n %{pkgname}
+if [ -d /run/systemd/system ]; then
 %systemd_post greenboot-healthcheck.service
 %systemd_post greenboot-set-rollback-trigger.service
 %systemd_post greenboot-success.target
+fi
 
 %preun -n %{pkgname}
+if [ -d /run/systemd/system ]; then
 %systemd_preun greenboot-healthcheck.service
 %systemd_preun greenboot-set-rollback-trigger.service
 %systemd_preun greenboot-success.target
+fi
 
 %postun -n %{pkgname}
 %systemd_postun greenboot-healthcheck.service
@@ -146,6 +150,12 @@ install -DpZm 0644 usr/lib/systemd/system/greenboot-healthcheck.service.d/10-net
 %{_unitdir}/greenboot-healthcheck.service.d/10-network-online.conf
 
 %changelog
+* Tue Aug 18 2026 Sayan Paul <saypaul@redhat.com> - 0.16.4
+- Fixed false warning on first time boot
+- Added detection of grub fallback on faulty kernel
+- Fixed red.d script stdout/stderr not logged 
+- Fixed CI tests
+
 * Wed Jan 21 2026 Sayan Paul <saypaul@redhat.com> - 0.16.2
 - restrict manual restart of healthcheck service
 - fixed error while running healtcheck inside container
